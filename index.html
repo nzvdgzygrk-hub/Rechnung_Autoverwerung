@@ -4,11 +4,8 @@
   <meta charset="UTF-8">
   <title>Rechnungsprogramm – Kleinunternehmer</title>
 
-  <!-- Wichtig für iPhone / Mobile -->
+  <!-- wichtig für Handy / iPhone -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-
-  <!-- PDF Engine -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
   <style>
     body {
@@ -57,6 +54,11 @@
       box-sizing: border-box;
     }
 
+    input[readonly] {
+      background: #f9fafb;
+      font-weight: bold;
+    }
+
     button {
       padding: 10px 16px;
       border: none;
@@ -70,7 +72,6 @@
     .save   { background: #16a34a; color: #fff; }
     .clear  { background: #dc2626; color: #fff; }
     .print  { background: #2563eb; color: #fff; }
-    .pdfbtn { background: #7c3aed; color: #fff; }
     .edit   { background: #ea580c; color: #fff; }
     .delete { background: #8b0000; color: #fff; }
 
@@ -104,18 +105,32 @@
       border-bottom: none;
     }
 
-    /* Druckansicht: nur PDF-Bereich */
+    /* Druck – Safari-Fußzeile möglichst weg */
+    @page {
+      margin: 0;
+    }
+
     @media print {
       header, .no-print {
         display: none !important;
       }
+
       body {
-        background: #ffffff;
+        margin: 0 !important;
+        background: #ffffff !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
       }
+
       #pdfArea {
         margin: 0;
         box-shadow: none;
       }
+    }
+
+    * {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
   </style>
 </head>
@@ -160,46 +175,46 @@
       <button onclick="addPosition()">+ Position hinzufügen</button>
 
       <h3>Gesamtbetrag (€)</h3>
-      <input id="summe">
+      <input id="summe" readonly placeholder="Gesamtbetrag wird automatisch berechnet">
 
       <button class="save"  onclick="saveRechnung()">Rechnung speichern</button>
       <button class="clear" onclick="clearRechnung()">Felder leeren</button>
       <button class="print" onclick="printDirect()">Drucken</button>
-      <button class="pdfbtn" onclick="createPDF()">PDF speichern</button>
     </div>
 
-    <!-- Bereich, der in PDF & beim Drucken benutzt wird -->
+    <!-- Bereich für Druck -->
     <div id="pdfArea" style="
         display:none;
         background:#ffffff;
-        max-width:190mm;
+        width:210mm;
+        min-height:297mm;
         margin:0 auto;
-        padding:20px;
+        padding:20mm;
         box-sizing:border-box;
-      ">
-      <div style="display:flex; align-items:flex-start; gap:20px;">
-        <img src="Logo.png" style="width:120px;" alt="Logo">
+    ">
+      <div style="display:flex; gap:20px;">
+        <img src="Logo.png" style="width:90px; border-radius:6px;" alt="Logo">
         <div style="font-size:14px; margin-top:5px;">
-          <div><strong><span id="p_firma"></span></strong></div>
-          <div><span id="p_adresse"></span></div>
-          <div><span id="p_email"></span></div>
-          <div><span id="p_telefon"></span></div>
+          <b><span id="p_firma"></span></b><br>
+          <span id="p_adresse"></span><br>
+          <span id="p_email"></span><br>
+          <span id="p_telefon"></span><br>
         </div>
       </div>
 
       <h1 style="text-align:center; margin-top:30px;">Rechnung</h1>
 
-      <div style="font-size:14px; margin-top:10px;">
-        <div><strong>Rechnungsnummer:</strong> <span id="p_rnr"></span></div>
-        <div><strong>Kunde:</strong> <span id="p_kunde"></span></div>
-        <div><strong>Datum:</strong> <span id="p_datum"></span></div>
+      <div style="margin-top:15px; font-size:14px;">
+        <b>Rechnungsnummer:</b> <span id="p_rnr"></span><br>
+        <b>Kunde:</b> <span id="p_kunde"></span><br>
+        <b>Datum:</b> <span id="p_datum"></span><br>
       </div>
 
-      <table style="margin-top:25px;">
+      <table style="margin-top:20px; width:100%; border-collapse:collapse;">
         <thead>
         <tr>
-          <th>Beschreibung</th>
-          <th>Preis (€)</th>
+          <th style="background:#f3f4f6; padding:10px;">Beschreibung</th>
+          <th style="background:#f3f4f6; padding:10px;">Preis (€)</th>
         </tr>
         </thead>
         <tbody id="p_pos"></tbody>
@@ -209,12 +224,12 @@
         Gesamt: <span id="p_summe"></span> €
       </h2>
 
-      <p style="margin-top:20px; font-weight:bold; font-size:13px;">
+      <p style="margin-top:30px; font-size:13px; font-weight:bold;">
         Gemäß §19 UStG beinhaltet dieser Betrag keine Umsatzsteuer.
       </p>
 
-      <div style="margin-top:50px; font-size:14px;">
-        <strong>Betrag erhalten – bestätigt durch Unterschrift:</strong><br><br>
+      <div style="margin-top:40px; font-size:14px;">
+        <b>Betrag erhalten – bestätigt durch Unterschrift:</b><br><br>
         <div style="border-bottom:2px solid #000; width:300px; height:40px;"></div>
       </div>
     </div>
@@ -225,13 +240,14 @@
     <h2>Archiv</h2>
     <div id="archivList"></div>
   </div>
+
 </div>
 
 <script>
-  // Globale Variable für "Bearbeiten"
+  // aktuell bearbeitete Rechnung aus dem Archiv (für Edit)
   let currentEditId = null;
 
-  /* ---------- Firmendaten ---------- */
+  /* -------- Firmendaten -------- */
   function saveFirmendaten() {
     localStorage.setItem("firma",   document.getElementById("firma").value);
     localStorage.setItem("adresse", document.getElementById("adresse").value);
@@ -249,38 +265,60 @@
 
   loadFirmendaten();
 
-  /* ---------- Positionen ---------- */
+  /* -------- Positionen -------- */
   function addPosition(desc = "", price = "") {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td><input class="p_desc" value="${desc}"></td>
-      <td><input class="p_price" value="${price}"></td>
-      <td><button onclick="this.parentElement.parentElement.remove()">X</button></td>
+      <td><input class="p_price" value="${price}" oninput="updateSum()"></td>
+      <td><button onclick="this.parentElement.parentElement.remove(); updateSum();">X</button></td>
     `;
     document.getElementById("posBody").appendChild(tr);
+    updateSum();
   }
 
-  /* ---------- Rechnung aus Formular einsammeln ---------- */
+  function updateSum() {
+    let total = 0;
+    document.querySelectorAll(".p_price").forEach(inp => {
+      const raw = inp.value.replace(",", ".").trim();
+      const num = parseFloat(raw);
+      if (!isNaN(num)) total += num;
+    });
+    const sumField = document.getElementById("summe");
+    if (total > 0) {
+      sumField.value = total.toFixed(2);
+    } else {
+      sumField.value = "";
+    }
+  }
+
+  /* -------- Rechnung aus Formular einsammeln -------- */
   function collectCurrentRechnung() {
     const pos = [];
+    let total = 0;
+
     document.querySelectorAll("#posBody tr").forEach(row => {
-      pos.push({
-        desc: row.querySelector(".p_desc").value,
-        price: row.querySelector(".p_price").value
-      });
+      const desc  = row.querySelector(".p_desc").value;
+      const price = row.querySelector(".p_price").value;
+      const num   = parseFloat(price.replace(",", "."));
+      if (!isNaN(num)) total += num;
+      pos.push({ desc, price });
     });
+
+    const sumFixed = total > 0 ? total.toFixed(2) : "0.00";
+    document.getElementById("summe").value = total > 0 ? sumFixed : "";
 
     return {
       id:   currentEditId || null,
       rnr:  document.getElementById("rnr").value,
       kunde:document.getElementById("kunde").value,
       datum:document.getElementById("datum").value,
-      summe:document.getElementById("summe").value,
+      summe:sumFixed,
       positionen: pos
     };
   }
 
-  /* ---------- Dokument für PDF/Print vorbereiten ---------- */
+  /* -------- Dokument für Druck vorbereiten -------- */
   function prepareDocument(r) {
     document.getElementById("p_firma").innerText   = document.getElementById("firma").value;
     document.getElementById("p_adresse").innerText = document.getElementById("adresse").value;
@@ -303,35 +341,18 @@
     document.getElementById("pdfArea").style.display = "block";
   }
 
-  /* ---------- Direkt drucken ---------- */
+  /* -------- Direkt drucken (Button) -------- */
   function printDirect() {
     const r = collectCurrentRechnung();
+    if (!r.rnr) {
+      alert("Bitte eine Rechnungsnummer eingeben.");
+      return;
+    }
     prepareDocument(r);
     window.print();
   }
 
-  /* ---------- PDF speichern ---------- */
-  function createPDF() {
-    const r = collectCurrentRechnung();
-    if (!r.rnr) {
-      alert("Bitte zuerst eine Rechnungsnummer eingeben.");
-      return;
-    }
-    prepareDocument(r);
-
-    const element = document.getElementById("pdfArea");
-
-    const opt = {
-      margin:       10,
-      filename:     `Rechnung_${r.rnr}.pdf`,
-      html2canvas:  { scale: 3, useCORS: true, backgroundColor: "#ffffff" },
-      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
-
-    html2pdf().set(opt).from(element).save();
-  }
-
-  /* ---------- Rechnung speichern & Archiv ---------- */
+  /* -------- Archiv / Speichern -------- */
   function saveRechnung() {
     let r = collectCurrentRechnung();
 
@@ -343,17 +364,15 @@
     let archiv = JSON.parse(localStorage.getItem("archiv") || "[]");
 
     if (currentEditId) {
-      // Update bestehende Rechnung
       r.id = currentEditId;
       archiv = archiv.map(item => item.id === currentEditId ? r : item);
     } else {
-      // Neue Rechnung
       r.id = Date.now();
       archiv.push(r);
     }
 
-    // Sortierung nach Rechnungsnummer (String, aber numerisch)
-    archiv.sort((a, b) => a.rnr.localeCompare(b.rnr, "de", {numeric:true}));
+    // sortiert nach Rechnungsnummer (001/26, 002/26 usw.)
+    archiv.sort((a, b) => a.rnr.localeCompare(b.rnr, "de", { numeric: true }));
 
     localStorage.setItem("archiv", JSON.stringify(archiv));
     currentEditId = null;
@@ -368,92 +387,4 @@
 
     archiv.forEach(r => {
       const div = document.createElement("div");
-      div.className = "archiv-entry";
-      div.innerHTML = `
-        <b>Rechnung #${r.rnr}</b><br>
-        ${r.kunde} – ${r.datum} – ${r.summe} €
-      `;
-
-      const btnEdit = document.createElement("button");
-      btnEdit.className = "edit";
-      btnEdit.textContent = "Bearbeiten";
-      btnEdit.onclick = () => editRechnung(r.id);
-
-      const btnPrint = document.createElement("button");
-      btnPrint.className = "print";
-      btnPrint.textContent = "Drucken";
-      btnPrint.onclick = () => printFromArchiv(r.id);
-
-      const btnDelete = document.createElement("button");
-      btnDelete.className = "delete";
-      btnDelete.textContent = "Löschen";
-      btnDelete.onclick = () => deleteRechnung(r.id);
-
-      div.appendChild(document.createElement("br"));
-      div.appendChild(btnEdit);
-      div.appendChild(btnPrint);
-      div.appendChild(btnDelete);
-
-      list.appendChild(div);
-    });
-  }
-
-  loadArchiv();
-
-  /* ---------- Archiv-Funktionen ---------- */
-  function findRechnungById(id) {
-    const archiv = JSON.parse(localStorage.getItem("archiv") || "[]");
-    return archiv.find(r => r.id === id) || null;
-  }
-
-  function editRechnung(id) {
-    const r = findRechnungById(id);
-    if (!r) return;
-
-    currentEditId = id;
-
-    document.getElementById("rnr").value   = r.rnr;
-    document.getElementById("kunde").value = r.kunde;
-    document.getElementById("datum").value = r.datum;
-    document.getElementById("summe").value = r.summe;
-
-    const posBody = document.getElementById("posBody");
-    posBody.innerHTML = "";
-    r.positionen.forEach(p => addPosition(p.desc, p.price));
-
-    alert("Rechnung zum Bearbeiten geladen.");
-  }
-
-  function deleteRechnung(id) {
-    let archiv = JSON.parse(localStorage.getItem("archiv") || "[]");
-    archiv = archiv.filter(r => r.id !== id);
-    localStorage.setItem("archiv", JSON.stringify(archiv));
-
-    if (currentEditId === id) {
-      currentEditId = null;
-      clearRechnung();
-    }
-
-    loadArchiv();
-  }
-
-  function printFromArchiv(id) {
-    const r = findRechnungById(id);
-    if (!r) return;
-    prepareDocument(r);
-    window.print();
-  }
-
-  /* ---------- Formular leeren ---------- */
-  function clearRechnung() {
-    currentEditId = null;
-    document.getElementById("rnr").value = "";
-    document.getElementById("kunde").value = "";
-    document.getElementById("datum").value = "";
-    document.getElementById("summe").value = "";
-    document.getElementById("posBody").innerHTML = "";
-  }
-</script>
-
-</body>
-</html>
+      div.className
