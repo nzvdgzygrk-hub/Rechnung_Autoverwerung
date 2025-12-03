@@ -2,306 +2,220 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Rechnungsprogramm – Fix Version</title>
+<title>Rechnungsprogramm – Kleinunternehmer</title>
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body { font-family: Arial; margin:0; background:#eef0f4; }
-header { background:#1f2937; color:white; padding:20px; text-align:center; font-size:22px; }
-.container { max-width:950px; margin:auto; padding:20px; }
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        background: #eef0f4;
+    }
+    header {
+        background: #1f2937;
+        color: #fff;
+        padding: 20px;
+        text-align: center;
+        font-size: 22px;
+    }
+    .container {
+        max-width: 950px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    .box {
+        background: #fff;
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    }
+    h2 {
+        margin-top: 0;
+        border-left: 5px solid #1f2937;
+        padding-left: 10px;
+    }
 
-.box {
-  background:white; padding:20px; border-radius:12px;
-  box-shadow:0 0 15px rgba(0,0,0,0.1); margin-bottom:20px;
-}
+    input {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 12px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        text-align: center;
+        box-sizing: border-box;
+    }
 
-h2 { border-left:5px solid #1f2937; padding-left:10px; }
+    button {
+        padding: 10px 18px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        margin-right: 10px;
+        margin-top: 5px;
+        font-size: 15px;
+    }
+    .save   { background: #16a34a; color: #fff; }
+    .clear  { background: #dc2626; color: #fff; }
+    .edit   { background: #ea580c; color: #fff; }
+    .delete { background: #8b0000; color: #fff; }
+    .printBtn { background: #2563eb; color: #fff; }
 
-input {
-  width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;
-  margin-bottom:12px; text-align:center;
-}
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+    }
+    th, td {
+        padding: 10px;
+        border-bottom: 1px solid #ddd;
+        text-align: center;
+    }
+    th {
+        background: #f3f4f6;
+    }
 
-button {
-  padding:10px 18px; border:none; border-radius:6px; cursor:pointer;
-  margin-right:10px; margin-top:5px; font-size:15px;
-}
-
-.save{ background:#16a34a; color:white; }
-.clear{ background:#dc2626; color:white; }
-.edit{ background:#ea580c; color:white; }
-.delete{ background:#8b0000; color:white; }
-.printBtn{ background:#2563eb; color:white; }
-
-table{ width:100%; border-collapse:collapse; margin-top:10px; }
-th,td{ padding:10px; border-bottom:1px solid #ddd; text-align:center; }
-th{ background:#f3f4f6;}
-
-@page{ margin:0; }
-
-@media print {
-    header,.no-print { display:none !important; }
-    #pdfArea { display:block !important; }
-}
+    /* Druck: nur Rechnung, keine Browser-Fußzeile (meistens) */
+    @page {
+        margin: 0; /* nimmt Header/Footer (Link, Datum, Seite) raus */
+    }
+    @media print {
+        header,
+        .no-print {
+            display: none !important;
+        }
+        body {
+            background: #ffffff;
+            margin: 0 !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        #pdfArea {
+            display: block !important;
+        }
+    }
 </style>
 </head>
-
 <body>
 
-<header>Rechnungsprogramm – Fix Version</header>
+<header>Rechnungsprogramm – Kleinunternehmer</header>
 
 <div class="container">
 
-<!-- FIRMENDATEN -->
-<div class="box no-print">
-  <h2>Firmendaten</h2>
-  <img src="Logo.png" style="width:120px; margin-bottom:10px;">
-  <input id="firma" placeholder="Firma">
-  <input id="adresse" placeholder="Adresse">
-  <input id="email" placeholder="E-Mail">
-  <input id="telefon" placeholder="Telefon">
-  <button class="save" onclick="saveFirmendaten()">Speichern</button>
-</div>
-
-<!-- RECHNUNG -->
-<div class="box">
-  <h2 class="no-print">Rechnung erstellen</h2>
-
-  <div class="no-print">
-    <input id="rnr" placeholder="Rechnungsnummer">
-    <input id="kunde" placeholder="Kunde">
-    <input id="datum" type="date">
-
-    <h3>Positionen</h3>
-
-    <table>
-      <thead>
-        <tr><th>Beschreibung</th><th>Preis (€)</th><th>Aktion</th></tr>
-      </thead>
-      <tbody id="posBody"></tbody>
-    </table>
-
-    <button onclick="addPosition()">+ Position</button>
-
-    <h3>Gesamtsumme (€)</h3>
-    <input id="summe" readonly style="background:#e5e7eb; font-weight:bold;">
-
-    <button class="save" onclick="saveRechnung()">Rechnung speichern</button>
-    <button class="clear" onclick="clearRechnung()">Leeren</button>
-  </div>
-
-  <!-- DRUCKBEREICH -->
-  <div id="pdfArea" style="
-     display:none; background:white; width:210mm; min-height:297mm;
-     padding:20mm; margin:auto; box-sizing:border-box;
-  ">
-    <div style="display:flex; gap:20px;">
-      <img src="Logo.png" style="width:90px;">
-      <div>
-        <b><span id="p_firma"></span></b><br>
-        <span id="p_adresse"></span><br>
-        <span id="p_email"></span><br>
-        <span id="p_telefon"></span><br>
-      </div>
+    <!-- FIRMENDATEN -->
+    <div class="box no-print">
+        <h2>Firmendaten</h2>
+        <img src="Logo.png" style="width:120px; margin-bottom:10px;" alt="Logo">
+        <input id="firma"   placeholder="Firma">
+        <input id="adresse" placeholder="Adresse">
+        <input id="email"   placeholder="E-Mail">
+        <input id="telefon" placeholder="Telefon">
+        <button class="save" onclick="saveFirmendaten()">Firmendaten speichern</button>
     </div>
 
-    <h1 style="text-align:center;">Rechnung</h1>
+    <!-- RECHNUNG -->
+    <div class="box">
+        <h2 class="no-print">Rechnung erstellen</h2>
 
-    <p><b>Rechnungsnummer:</b> <span id="p_rnr"></span></p>
-    <p><b>Kunde:</b> <span id="p_kunde"></span></p>
-    <p><b>Datum:</b> <span id="p_datum"></span></p>
+        <div class="no-print">
+            <input id="rnr"   placeholder="Rechnungsnummer">
+            <input id="kunde" placeholder="Kunde">
+            <input id="datum" type="date">
 
-    <table>
-      <thead>
-        <tr><th>Beschreibung</th><th>Preis (€)</th></tr>
-      </thead>
-      <tbody id="p_pos"></tbody>
-    </table>
+            <h3>Positionen</h3>
+            <table>
+                <thead>
+                <tr>
+                    <th>Beschreibung</th>
+                    <th>Preis (€)</th>
+                    <th>Aktion</th>
+                </tr>
+                </thead>
+                <tbody id="posBody"></tbody>
+            </table>
 
-    <h2 style="text-align:right;">Gesamt: <span id="p_summe"></span> €</h2>
+            <button onclick="addPosition()">+ Position hinzufügen</button>
 
-    <p style="font-weight:bold; margin-top:20px;">
-      Gemäß §19 UStG beinhaltet dieser Betrag keine Umsatzsteuer.
-    </p>
+            <h3>Gesamtsumme (€)</h3>
+            <input id="summe" readonly style="background:#e5e7eb; font-weight:bold;">
 
-    <div style="margin-top:40px;">
-      <b>Betrag erhalten – bestätigt durch Unterschrift:</b><br><br>
-      <div style="border-bottom:2px solid black; width:300px; height:40px;"></div>
+            <button class="save" onclick="saveRechnung()">Rechnung speichern</button>
+            <button class="clear" onclick="clearRechnung()">Felder leeren</button>
+        </div>
+
+        <!-- DRUCKBEREICH -->
+        <div id="pdfArea" style="
+            display:none;
+            background:#ffffff;
+            width:190mm;
+            margin:0 auto;
+            padding:15mm;
+            box-sizing:border-box;
+        ">
+            <div style="display:flex; gap:20px;">
+                <img src="Logo.png" style="width:90px;" alt="Logo">
+                <div style="font-size:14px; margin-top:3px;">
+                    <strong><span id="p_firma"></span></strong><br>
+                    <span id="p_adresse"></span><br>
+                    <span id="p_email"></span><br>
+                    <span id="p_telefon"></span>
+                </div>
+            </div>
+
+            <h1 style="text-align:center; margin-top:25px;">Rechnung</h1>
+
+            <div style="margin-top:10px; font-size:14px;">
+                <b>Rechnungsnummer:</b> <span id="p_rnr"></span><br>
+                <b>Kunde:</b> <span id="p_kunde"></span><br>
+                <b>Datum:</b> <span id="p_datum"></span><br>
+            </div>
+
+            <table style="margin-top:20px;">
+                <thead>
+                <tr>
+                    <th>Beschreibung</th>
+                    <th>Preis (€)</th>
+                </tr>
+                </thead>
+                <tbody id="p_pos"></tbody>
+            </table>
+
+            <h2 style="text-align:right; margin-top:25px;">
+                Gesamt: <span id="p_summe"></span> €
+            </h2>
+
+            <p style="margin-top:20px; font-weight:bold;">
+                Gemäß §19 UStG beinhaltet dieser Betrag keine Umsatzsteuer.
+            </p>
+
+            <div style="margin-top:40px;">
+                <b>Betrag erhalten – bestätigt durch Unterschrift:</b><br><br>
+                <div style="border-bottom:2px solid #000; width:300px; height:40px;"></div>
+            </div>
+        </div>
     </div>
-  </div>
-</div>
 
-<!-- ARCHIV -->
-<div class="box no-print">
-  <h2>Archiv</h2>
-  <div id="archivList"></div>
-</div>
+    <!-- ARCHIV -->
+    <div class="box no-print">
+        <h2>Archiv</h2>
+        <div id="archivList"></div>
+    </div>
 
 </div>
 
 <script>
+/* ---------- Hilfsfunktion: heutiges Datum als YYYY-MM-DD ---------- */
+function todayStr() {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+}
 
 /* ---------- Firmendaten ---------- */
 function saveFirmendaten(){
-    localStorage.setItem("firma", firma.value);
-    localStorage.setItem("adresse", adresse.value);
-    localStorage.setItem("email", email.value);
-    localStorage.setItem("telefon", telefon.value);
-}
-function loadFirmendaten(){
-    firma.value = localStorage.getItem("firma") || "";
-    adresse.value = localStorage.getItem("adresse") || "";
-    email.value = localStorage.getItem("email") || "";
-    telefon.value = localStorage.getItem("telefon") || "";
-}
-loadFirmendaten();
-
-/* ---------- Positionen ---------- */
-function addPosition(desc="", price="") {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-       <td><input class="p_desc" value="${desc}" oninput="calcSum()"></td>
-       <td><input class="p_price" value="${price}" oninput="calcSum()"></td>
-       <td><button onclick="this.parentElement.parentElement.remove(); calcSum();">X</button></td>
-    `;
-    posBody.appendChild(tr);
-    calcSum();
-}
-
-/* ---------- automatische Summe ---------- */
-function calcSum(){
-    let total = 0;
-    document.querySelectorAll(".p_price").forEach(inp=>{
-        let v = parseFloat(inp.value.replace(",", ".")) || 0;
-        total += v;
-    });
-    summe.value = total.toFixed(2);
-}
-
-/* ---------- Rechnung erfassen ---------- */
-function collect(){
-    let pos = [];
-    document.querySelectorAll("#posBody tr").forEach(row=>{
-        pos.push({
-            desc: row.querySelector(".p_desc").value,
-            price: row.querySelector(".p_price").value
-        });
-    });
-
-    return {
-        id: Date.now(),
-        rnr: rnr.value,
-        kunde: kunde.value,
-        datum: datum.value,
-        summe: summe.value,
-        positionen: pos
-    };
-}
-
-/* ---------- Rechnung speichern ---------- */
-function saveRechnung(){
-    const r = collect();
-    let archiv = JSON.parse(localStorage.getItem("archiv")||"[]");
-    archiv.push(r);
-
-    archiv.sort((a,b)=>a.rnr.localeCompare(b.rnr, "de", {numeric:true}));
-
-    localStorage.setItem("archiv", JSON.stringify(archiv));
-    loadArchiv();
-}
-
-/* ---------- Archiv anzeigen ---------- */
-function loadArchiv(){
-    const archiv = JSON.parse(localStorage.getItem("archiv")||"[]");
-    archivList.innerHTML = "";
-
-    archiv.forEach(r=>{
-        const div = document.createElement("div");
-        div.style.marginBottom = "15px";
-        div.innerHTML = `<b>#${r.rnr}</b> – ${r.kunde} – ${r.summe} €<br>`;
-
-        const b1 = document.createElement("button");
-        b1.className="edit";
-        b1.innerText="Bearbeiten";
-        b1.onclick=()=>editRechnung(r.id);
-
-        const b2 = document.createElement("button");
-        b2.className="printBtn";
-        b2.innerText="Drucken";
-        b2.onclick=()=>printInvoice(r.id);
-
-        const b3 = document.createElement("button");
-        b3.className="delete";
-        b3.innerText="Löschen";
-        b3.onclick=()=>deleteRechnung(r.id);
-
-        div.appendChild(b1);
-        div.appendChild(b2);
-        div.appendChild(b3);
-
-        archivList.appendChild(div);
-    });
-}
-loadArchiv();
-
-/* ---------- Rechnung aus Archiv drucken ---------- */
-function printInvoice(id){
-    const archiv = JSON.parse(localStorage.getItem("archiv"));
-    const r = archiv.find(x=>x.id===id);
-
-    // fülle PDF Layout
-    p_firma.innerText = firma.value;
-    p_adresse.innerText = adresse.value;
-    p_email.innerText = email.value;
-    p_telefon.innerText = telefon.value;
-
-    p_rnr.innerText = r.rnr;
-    p_kunde.innerText = r.kunde;
-    p_datum.innerText = r.datum;
-    p_summe.innerText = r.summe;
-
-    p_pos.innerHTML = "";
-    r.positionen.forEach(p=>{
-        p_pos.innerHTML += `<tr><td>${p.desc}</td><td>${p.price}</td></tr>`;
-    });
-
-    // drucken
-    window.print();
-}
-
-/* ---------- Rechnung bearbeiten ---------- */
-function editRechnung(id){
-    const arch = JSON.parse(localStorage.getItem("archiv"));
-    const r = arch.find(x=>x.id===id);
-
-    rnr.value = r.rnr;
-    kunde.value = r.kunde;
-    datum.value = r.datum;
-
-    posBody.innerHTML = "";
-    r.positionen.forEach(p=>addPosition(p.desc,p.price));
-
-    calcSum();
-}
-
-/* ---------- Rechnung löschen ---------- */
-function deleteRechnung(id){
-    let archiv = JSON.parse(localStorage.getItem("archiv"));
-    archiv = archiv.filter(x=>x.id!==id);
-    localStorage.setItem("archiv", JSON.stringify(archiv));
-    loadArchiv();
-}
-
-/* ---------- Felder löschen ---------- */
-function clearRechnung(){
-    rnr.value = "";
-    kunde.value = "";
-    datum.value = "";
-    posBody.innerHTML = "";
-    summe.value = "";
-}
-</script>
-
-</body>
-</html>
+    localStorage.setItem("firma",   document.getElementById("firma").value);
+    localStorage.setItem("adresse", document.getElementById("adresse").value);
+    local
