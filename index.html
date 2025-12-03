@@ -31,6 +31,7 @@ input, textarea {
     margin: 5px 0 10px 0;
     border-radius: 5px;
     border: 1px solid #ccc;
+    text-align: center;
 }
 
 button {
@@ -45,8 +46,8 @@ button {
 .save { background: #27ae60; color: white; }
 .clear { background: #c0392b; color: white; }
 .print { background: #2980b9; color: white; }
-.pdf { background: #8e44ad; color: white; }
 .edit { background: #d35400; color: white; }
+.delete { background: #8b0000; color: white; }
 
 /* ----------- POSITIONEN TABELLE ----------- */
 table {
@@ -57,16 +58,17 @@ table {
 th, td {
     padding: 6px;
     border-bottom: 1px solid #ccc;
+    text-align: center;
 }
 th { background: #eee; }
 
 /* ----------- DRUCKANSICHT ----------- */
 @media print {
-    header, button, .no-print, .box:nth-child(1), .box:nth-child(3) {
+    header, .no-print, .box:nth-child(1), .box:nth-child(3) {
         display: none !important;
     }
     body { background: white; }
-    .print-area {
+    #printArea {
         display: block;
         padding: 20px;
         font-size: 14px;
@@ -85,20 +87,21 @@ th { background: #eee; }
     <!-- FIRMENDATEN -->
     <div class="box no-print">
         <h2>Firmendaten</h2>
-        <img src="Logo.png" id="logoPreview" style="width:180px; margin-bottom:10px;">
+        <img src="Logo.png" id="logoPreview" style="width:140px; margin-bottom:10px;">
         <input id="firma" placeholder="Firmenname">
         <input id="adresse" placeholder="Adresse">
         <input id="email" placeholder="E-Mail">
         <input id="telefon" placeholder="Telefon">
-
         <button class="save" onclick="saveFirmendaten()">Firmendaten speichern</button>
     </div>
 
     <!-- RECHNUNG -->
     <div class="box">
-        <h2>Rechnung erstellen</h2>
+        <h2 class="no-print">Rechnung erstellen</h2>
 
         <div class="no-print">
+            <input id="rnr" placeholder="Rechnungsnummer">
+
             <input id="kunde" placeholder="Kunde">
             <input id="datum" type="date">
 
@@ -122,22 +125,22 @@ th { background: #eee; }
 
             <button class="save" onclick="saveRechnung()">Rechnung speichern</button>
             <button class="clear" onclick="clearRechnung()">Felder leeren</button>
-            <button class="print" onclick="window.print()">Drucken</button>
+            <button class="print" onclick="directPrint()">Drucken</button>
         </div>
 
         <!-- DRUCKBEREICH -->
-        <div id="printArea" class="print-area" style="display:none;">
-            <img src="Logo.png" style="width:180px;"><br><br>
+        <div id="printArea" style="display:none;">
+            <img src="Logo.png" style="width:140px;"><br><br>
 
             <h2>Rechnung</h2>
+            <b>Rechnungsnummer:</b> <span id="p_rnr"></span><br>
+            <b>Kunde:</b> <span id="p_kunde"></span><br>
+            <b>Datum:</b> <span id="p_datum"></span><br><br>
+
             <b>Firma:</b> <span id="p_firma"></span><br>
             <b>Adresse:</b> <span id="p_adresse"></span><br>
             <b>Email:</b> <span id="p_email"></span><br>
             <b>Telefon:</b> <span id="p_telefon"></span><br><br>
-
-            <b>Rechnungsnummer:</b> <span id="p_rnr"></span><br>
-            <b>Kunde:</b> <span id="p_kunde"></span><br>
-            <b>Datum:</b> <span id="p_datum"></span><br><br>
 
             <table>
                 <thead>
@@ -147,13 +150,16 @@ th { background: #eee; }
             </table>
 
             <h3>Gesamtbetrag: <span id="p_summe"></span> €</h3>
-            <p><i>Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.</i></p>
+
+            <p style="font-weight:bold; margin-top:20px;">
+                Gemäß §19 UStG beinhaltet dieser Betrag keine Umsatzsteuer.
+            </p>
         </div>
     </div>
 
     <!-- ARCHIV -->
     <div class="box no-print">
-        <h2>Archiv (sortiert nach Rechnungsnummer)</h2>
+        <h2>Archiv</h2>
         <div id="archivList"></div>
     </div>
 
@@ -194,46 +200,33 @@ function addPosition(desc = "", price = "") {
 }
 
 /* ----------------------------------
-   Nummern-Generator
----------------------------------- */
-function getNextReNr() {
-    let nr = localStorage.getItem("reNr") || 1;
-    localStorage.setItem("reNr", Number(nr) + 1);
-    return nr;
-}
-
-/* ----------------------------------
    Rechnung speichern
 ---------------------------------- */
 function saveRechnung() {
-    const reNr = getNextReNr();
+    const r = {
+        id: Date.now(),
+        rnr: rnr.value,
+        kunde: kunde.value,
+        datum: datum.value,
+        summe: summe.value,
+        positionen: []
+    };
 
-    let pos = [];
     document.querySelectorAll("#posBody tr").forEach(row => {
-        pos.push({
+        r.positionen.push({
             desc: row.querySelector(".p_desc").value,
             price: row.querySelector(".p_price").value
         });
     });
 
-    const r = {
-        id: Date.now(),
-        rnr: reNr,
-        kunde: kunde.value,
-        datum: datum.value,
-        summe: summe.value,
-        positionen: pos
-    };
-
     let archiv = JSON.parse(localStorage.getItem("archiv")) || [];
-    archiv.push(r);
 
-    archiv.sort((a, b) => a.rnr - b.rnr); // sortieren nach Rechnungsnummer
+    archiv.push(r);
+    archiv.sort((a, b) => Number(a.rnr) - Number(b.rnr));
 
     localStorage.setItem("archiv", JSON.stringify(archiv));
 
     alert("Rechnung gespeichert!");
-
     loadArchiv();
 }
 
@@ -259,8 +252,28 @@ function preparePrint(r) {
     printArea.style.display = "block";
 }
 
+function directPrint() {
+    const r = {
+        rnr: rnr.value,
+        kunde: kunde.value,
+        datum: datum.value,
+        summe: summe.value,
+        positionen: []
+    };
+
+    document.querySelectorAll("#posBody tr").forEach(row => {
+        r.positionen.push({
+            desc: row.querySelector(".p_desc").value,
+            price: row.querySelector(".p_price").value
+        });
+    });
+
+    preparePrint(r);
+    window.print();
+}
+
 /* ----------------------------------
-   Archiv laden
+   Archiv
 ---------------------------------- */
 function loadArchiv() {
     let archiv = JSON.parse(localStorage.getItem("archiv")) || [];
@@ -269,26 +282,29 @@ function loadArchiv() {
 
     archiv.forEach(r => {
         const div = document.createElement("div");
+        div.style.marginBottom = "10px";
+
         div.innerHTML = `
             <b>Rechnung #${r.rnr}</b><br>
-            Kunde: ${r.kunde}<br>
-            Datum: ${r.datum}<br>
-            Summe: ${r.summe} €<br>
+            ${r.kunde} – ${r.datum} – ${r.summe} €<br>
             <button class="edit" onclick='editRechnung(${r.id})'>Bearbeiten</button>
-            <button onclick='previewRechnung(${r.id})'>Druckansicht</button>
+            <button class="print" onclick='printArchiv(${r.id})'>Drucken</button>
+            <button class="delete" onclick='deleteRechnung(${r.id})'>Löschen</button>
         `;
+
         list.appendChild(div);
     });
 }
 loadArchiv();
 
 /* ----------------------------------
-   Rechnung bearbeiten
+   Archiv-Funktionen
 ---------------------------------- */
 function editRechnung(id) {
     let archiv = JSON.parse(localStorage.getItem("archiv"));
     let r = archiv.find(x => x.id === id);
 
+    rnr.value = r.rnr;
     kunde.value = r.kunde;
     datum.value = r.datum;
     summe.value = r.summe;
@@ -296,17 +312,26 @@ function editRechnung(id) {
     posBody.innerHTML = "";
     r.positionen.forEach(p => addPosition(p.desc, p.price));
 
-    alert("Rechnung geladen – du kannst sie bearbeiten.");
+    alert("Rechnung geladen.");
 }
 
-function previewRechnung(id) {
+function deleteRechnung(id) {
+    let archiv = JSON.parse(localStorage.getItem("archiv"));
+    archiv = archiv.filter(x => x.id !== id);
+    localStorage.setItem("archiv", JSON.stringify(archiv));
+    loadArchiv();
+}
+
+function printArchiv(id) {
     let archiv = JSON.parse(localStorage.getItem("archiv"));
     let r = archiv.find(x => x.id === id);
     preparePrint(r);
+    window.print();
 }
 
 /* ---------------------------------- */
 function clearRechnung() {
+    rnr.value = "";
     kunde.value = "";
     datum.value = "";
     summe.value = "";
