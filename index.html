@@ -1,460 +1,147 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <title>Rechnungsprogramm – Kleinunternehmer</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<title>Rechnungsprogramm – iPhone PDF FIX</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- PDF-Bibliothek für echte PDFs ohne Browser-Fußzeile -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<!-- html2pdf -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      background: #eef0f4;
-    }
-    header {
-      background: #1f2937;
-      color: #fff;
-      padding: 20px;
-      text-align: center;
-      font-size: 22px;
-    }
-    .container {
-      max-width: 950px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-    .box {
-      background: #fff;
-      padding: 20px;
-      border-radius: 12px;
-      margin-bottom: 20px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.1);
-    }
-    h2 {
-      margin-top: 0;
-      border-left: 5px solid #1f2937;
-      padding-left: 10px;
-    }
+<style>
+body {
+    font-family: Arial; margin: 0; background: #eef0f4;
+}
+header {
+    background:#1f2937; color:white; padding:20px; text-align:center;
+}
+.container { max-width:900px; margin:auto; padding:20px; }
+.box {
+    background:white; padding:20px; border-radius:12px;
+    box-shadow:0 0 15px rgba(0,0,0,0.1); margin-bottom:20px;
+}
+input {
+    width:100%; padding:10px; margin-bottom:12px; border-radius:6px;
+    border:1px solid #ccc; text-align:center;
+}
+button {
+    padding:10px 14px; border:none; border-radius:6px; cursor:pointer;
+    margin:4px; font-size:15px;
+}
+.save { background:#16a34a; color:white; }
+.clear { background:#dc2626; color:white; }
+.edit { background:#ea580c; color:white; }
+.delete { background:#8b0000; color:white; }
+.pdfBtn { background:#2563eb; color:white; }
 
-    input {
-      width: 100%;
-      padding: 10px;
-      margin-bottom: 12px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      text-align: center;
-      box-sizing: border-box;
-    }
+table {
+    width:100%; border-collapse:collapse; margin-top:10px;
+}
+th,td {
+    padding:10px; border-bottom:1px solid #ddd; text-align:center;
+}
+th { background:#f3f4f6; }
 
-    button {
-      padding: 8px 14px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      margin-right: 8px;
-      margin-top: 5px;
-      font-size: 14px;
-    }
-    .save   { background: #16a34a; color: #fff; }
-    .clear  { background: #dc2626; color: #fff; }
-    .edit   { background: #ea580c; color: #fff; }
-    .delete { background: #8b0000; color: #fff; }
-    .pdfBtn { background: #2563eb; color: #fff; }
+.archiv-entry {
+    padding:10px 0; border-bottom:1px solid #e5e7eb; font-size:14px;
+}
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-    }
-    th, td {
-      padding: 8px;
-      border-bottom: 1px solid #ddd;
-      text-align: center;
-    }
-    th {
-      background: #f3f4f6;
-    }
-
-    .archiv-entry {
-      padding: 8px 0;
-      border-bottom: 1px solid #e5e7eb;
-      font-size: 14px;
-    }
-    .archiv-entry:last-child {
-      border-bottom: none;
-    }
-
-    @media print {
-      header, .no-print {
-        display: none !important;
-      }
-      body {
-        background: #ffffff;
-      }
-    }
-  </style>
+@media print { .no-print { display:none; } }
+</style>
 </head>
 <body>
 
-<header>Rechnungsprogramm – Kleinunternehmer</header>
+<header>Rechnungsprogramm – PDF FIX</header>
 
 <div class="container">
 
-  <!-- Firmendaten -->
-  <div class="box no-print">
+<!-- Firmendaten -->
+<div class="box no-print">
     <h2>Firmendaten</h2>
-    <img src="Logo.png" style="width:120px; margin-bottom:10px;" alt="Logo">
-    <input id="firma"   placeholder="Firma">
+    <img src="Logo.png" style="width:120px; margin-bottom:10px;">
+    <input id="firma" placeholder="Firma">
     <input id="adresse" placeholder="Adresse">
-    <input id="email"   placeholder="E-Mail">
+    <input id="email" placeholder="E-Mail">
     <input id="telefon" placeholder="Telefon">
-    <button class="save" id="btnFirmendatenSpeichern">Firmendaten speichern</button>
-  </div>
+    <button class="save" id="btnFirmendaten">Speichern</button>
+</div>
 
-  <!-- Rechnung erstellen -->
-  <div class="box">
+<!-- Rechnung erstellen -->
+<div class="box">
     <h2 class="no-print">Rechnung erstellen</h2>
 
     <div class="no-print">
-      <input id="rnr"   placeholder="Rechnungsnummer">
-      <input id="kunde" placeholder="Kunde">
-      <input id="datum" type="date">
+        <input id="rnr" placeholder="Rechnungsnummer">
+        <input id="kunde" placeholder="Kunde">
+        <input id="datum" type="date">
 
-      <h3>Positionen</h3>
-      <table>
-        <thead>
-        <tr>
-          <th>Beschreibung</th>
-          <th>Preis (€)</th>
-          <th>Aktion</th>
-        </tr>
-        </thead>
-        <tbody id="posBody"></tbody>
-      </table>
+        <h3>Positionen:</h3>
+        <table>
+            <thead>
+                <tr><th>Beschreibung</th><th>Preis (€)</th><th>Aktion</th></tr>
+            </thead>
+            <tbody id="posBody"></tbody>
+        </table>
 
-      <button id="btnAddPos">+ Position hinzufügen</button>
+        <button id="addPosBtn">+ Position</button>
 
-      <h3>Gesamtsumme (€)</h3>
-      <input id="summe" readonly style="background:#e5e7eb; font-weight:bold;">
+        <h3>Gesamtsumme:</h3>
+        <input id="summe" readonly style="font-weight:bold; background:#e5e7eb">
 
-      <button class="save" id="btnSaveRechnung">Rechnung speichern</button>
-      <button class="clear" id="btnClearRechnung">Felder leeren</button>
+        <button class="save" id="btnSave">Rechnung speichern</button>
+        <button class="clear" id="btnClear">Leeren</button>
     </div>
 
-    <!-- Bereich, aus dem das PDF erzeugt wird -->
-    <div id="pdfArea" style="
-        display:none;
-        background:#ffffff;
-        width:210mm;
-        min-height:297mm;
-        padding:20mm;
-        box-sizing:border-box;
-      ">
-      <div style="display:flex; gap:20px;">
-        <img src="Logo.png" style="width:90px;" alt="Logo">
-        <div style="font-size:14px; margin-top:3px;">
-          <strong><span id="p_firma"></span></strong><br>
-          <span id="p_adresse"></span><br>
-          <span id="p_email"></span><br>
-          <span id="p_telefon"></span>
+    <!-- PDF-BEREICH – WIRD NICHT ANGEZEIGT -->
+    <div id="pdfArea" style="display:none; padding:20px; background:white;">
+        <div style="display:flex; gap:20px; align-items:flex-start;">
+            <img src="Logo.png" style="width:90px;">
+            <div>
+                <b><span id="p_firma"></span></b><br>
+                <span id="p_adresse"></span><br>
+                <span id="p_email"></span><br>
+                <span id="p_telefon"></span>
+            </div>
         </div>
-      </div>
 
-      <h1 style="text-align:center; margin-top:25px;">Rechnung</h1>
+        <h1 style="text-align:center; margin-top:20px;">Rechnung</h1>
 
-      <div style="margin-top:10px; font-size:14px;">
-        <b>Rechnungsnummer:</b> <span id="p_rnr"></span><br>
-        <b>Kunde:</b> <span id="p_kunde"></span><br>
-        <b>Datum:</b> <span id="p_datum"></span><br>
-      </div>
+        <p><b>Rechnungsnummer:</b> <span id="p_rnr"></span></p>
+        <p><b>Kunde:</b> <span id="p_kunde"></span></p>
+        <p><b>Datum:</b> <span id="p_datum"></span></p>
 
-      <table style="margin-top:20px;">
-        <thead>
-        <tr>
-          <th>Beschreibung</th>
-          <th>Preis (€)</th>
-        </tr>
-        </thead>
-        <tbody id="p_pos"></tbody>
-      </table>
+        <table style="margin-top:20px;">
+            <thead>
+            <tr><th>Beschreibung</th><th>Preis (€)</th></tr>
+            </thead>
+            <tbody id="p_pos"></tbody>
+        </table>
 
-      <h2 style="text-align:right; margin-top:25px;">
-        Gesamt: <span id="p_summe"></span> €
-      </h2>
+        <h2 style="text-align:right;">Gesamt: <span id="p_summe"></span> €</h2>
 
-      <p style="margin-top:20px; font-weight:bold;">
-        Gemäß §19 UStG wird keine Umsatzsteuer berechnet.
-      </p>
+        <p style="font-weight:bold;">
+            Gemäß §19 UStG wird keine Umsatzsteuer berechnet.
+        </p>
 
-      <div style="margin-top:40px;">
-        <b>Betrag erhalten – bestätigt durch Unterschrift:</b><br><br>
-        <div style="border-bottom:2px solid #000; width:300px; height:40px;"></div>
-      </div>
+        <div style="margin-top:30px;">
+            <b>Betrag erhalten – bestätigt durch Unterschrift:</b><br><br>
+            <div style="border-bottom:2px solid black; width:250px; height:40px;"></div>
+        </div>
     </div>
-  </div>
 
-  <!-- Archiv -->
-  <div class="box no-print">
+</div>
+
+<!-- ARCHIV -->
+<div class="box no-print">
     <h2>Archiv</h2>
     <div id="archivList"></div>
-  </div>
+</div>
 
 </div>
 
 <script>
-  // kleine Hilfsfunktion
-  const $ = id => document.getElementById(id);
+// Shortcuts
+const $ = id => document.getElementById(id);
 
-  let currentEditId = null;
-
-  // Heutiges Datum als yyyy-mm-dd
-  function todayStr() {
-    const d = new Date();
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${y}-${m}-${day}`;
-  }
-
-  // Firmendaten speichern / laden
-  function saveFirmendaten() {
-    localStorage.setItem("firma",   $("firma").value);
-    localStorage.setItem("adresse", $("adresse").value);
-    localStorage.setItem("email",   $("email").value);
-    localStorage.setItem("telefon", $("telefon").value);
-    alert("Firmendaten gespeichert!");
-  }
-
-  function loadFirmendaten() {
-    $("firma").value   = localStorage.getItem("firma")   || "";
-    $("adresse").value = localStorage.getItem("adresse") || "";
-    $("email").value   = localStorage.getItem("email")   || "";
-    $("telefon").value = localStorage.getItem("telefon") || "";
-  }
-
-  // Position hinzufügen
-  function addPosition(desc = "", price = "") {
-    const tr = document.createElement("tr");
-
-    const tdDesc = document.createElement("td");
-    const inDesc = document.createElement("input");
-    inDesc.className = "p_desc";
-    inDesc.value = desc;
-    inDesc.addEventListener("input", calcSum);
-    tdDesc.appendChild(inDesc);
-
-    const tdPrice = document.createElement("td");
-    const inPrice = document.createElement("input");
-    inPrice.className = "p_price";
-    inPrice.value = price;
-    inPrice.addEventListener("input", calcSum);
-    tdPrice.appendChild(inPrice);
-
-    const tdAct = document.createElement("td");
-    const btnX = document.createElement("button");
-    btnX.textContent = "X";
-    btnX.addEventListener("click", () => {
-      tr.remove();
-      calcSum();
-    });
-    tdAct.appendChild(btnX);
-
-    tr.appendChild(tdDesc);
-    tr.appendChild(tdPrice);
-    tr.appendChild(tdAct);
-    $("posBody").appendChild(tr);
-
-    calcSum();
-  }
-
-  // Summe berechnen
-  function calcSum() {
-    let total = 0;
-    document.querySelectorAll(".p_price").forEach(inp => {
-      const v = parseFloat(inp.value.replace(",", ".")) || 0;
-      total += v;
-    });
-    $("summe").value = total.toFixed(2);
-  }
-
-  // Rechnung als Objekt holen
-  function collectRechnung() {
-    const positionen = [];
-    document.querySelectorAll("#posBody tr").forEach(row => {
-      positionen.push({
-        desc: row.querySelector(".p_desc").value,
-        price: row.querySelector(".p_price").value
-      });
-    });
-
-    return {
-      id: currentEditId || Date.now(),
-      rnr: $("rnr").value,
-      kunde: $("kunde").value,
-      datum: $("datum").value,
-      summe: $("summe").value,
-      positionen
-    };
-  }
-
-  // Archiv lesen/schreiben
-  function loadArchiv() {
-    const archiv = JSON.parse(localStorage.getItem("archiv") || "[]");
-    const list = $("archivList");
-    list.innerHTML = "";
-
-    archiv.forEach(r => {
-      const div = document.createElement("div");
-      div.className = "archiv-entry";
-      div.innerHTML = `<b>#${r.rnr}</b> – ${r.kunde} – ${r.summe} €`;
-
-      const btnEdit = document.createElement("button");
-      btnEdit.className = "edit";
-      btnEdit.textContent = "Bearbeiten";
-      btnEdit.addEventListener("click", () => editRechnung(r.id));
-
-      const btnPdf = document.createElement("button");
-      btnPdf.className = "pdfBtn";
-      btnPdf.textContent = "PDF";
-      btnPdf.addEventListener("click", () => pdfRechnung(r.id));
-
-      const btnDel = document.createElement("button");
-      btnDel.className = "delete";
-      btnDel.textContent = "Löschen";
-      btnDel.addEventListener("click", () => deleteRechnung(r.id));
-
-      div.appendChild(document.createElement("br"));
-      div.appendChild(btnEdit);
-      div.appendChild(btnPdf);
-      div.appendChild(btnDel);
-
-      list.appendChild(div);
-    });
-  }
-
-  function saveRechnung() {
-    const r = collectRechnung();
-
-    if (!r.rnr) {
-      alert("Bitte eine Rechnungsnummer eingeben.");
-      return;
-    }
-
-    let archiv = JSON.parse(localStorage.getItem("archiv") || "[]");
-
-    if (currentEditId) {
-      archiv = archiv.map(x => x.id === currentEditId ? r : x);
-    } else {
-      archiv.push(r);
-    }
-
-    archiv.sort((a, b) =>
-      String(a.rnr).localeCompare(String(b.rnr), "de", { numeric: true })
-    );
-
-    localStorage.setItem("archiv", JSON.stringify(archiv));
-    currentEditId = null;
-    loadArchiv();
-    alert("Rechnung gespeichert!");
-  }
-
-  function getRechnungById(id) {
-    const archiv = JSON.parse(localStorage.getItem("archiv") || "[]");
-    return archiv.find(r => r.id === id);
-  }
-
-  function editRechnung(id) {
-    const r = getRechnungById(id);
-    if (!r) return;
-
-    currentEditId = r.id;
-    $("rnr").value   = r.rnr;
-    $("kunde").value = r.kunde;
-    $("datum").value = r.datum;
-
-    const posBody = $("posBody");
-    posBody.innerHTML = "";
-    r.positionen.forEach(p => addPosition(p.desc, p.price));
-
-    calcSum();
-  }
-
-  function deleteRechnung(id) {
-    let archiv = JSON.parse(localStorage.getItem("archiv") || "[]");
-    archiv = archiv.filter(r => r.id !== id);
-    localStorage.setItem("archiv", JSON.stringify(archiv));
-
-    if (currentEditId === id) {
-      currentEditId = null;
-      clearRechnung();
-    }
-
-    loadArchiv();
-  }
-
-  // PDF-Erzeugung nur aus dem Archiv
-  function pdfRechnung(id) {
-    const r = getRechnungById(id);
-    if (!r) return;
-
-    $("p_firma").innerText   = $("firma").value;
-    $("p_adresse").innerText = $("adresse").value;
-    $("p_email").innerText   = $("email").value;
-    $("p_telefon").innerText = $("telefon").value;
-
-    $("p_rnr").innerText   = r.rnr;
-    $("p_kunde").innerText = r.kunde;
-    $("p_datum").innerText = r.datum;
-    $("p_summe").innerText = r.summe;
-
-    const pPos = $("p_pos");
-    pPos.innerHTML = "";
-    r.positionen.forEach(p => {
-      const row = document.createElement("tr");
-      row.innerHTML = `<td>${p.desc}</td><td>${p.price}</td>`;
-      pPos.appendChild(row);
-    });
-
-    const element = $("pdfArea");
-    const oldDisplay = element.style.display;
-    element.style.display = "block";
-
-    const opt = {
-      margin:       0,
-      filename:     `Rechnung_${r.rnr || "ohneNummer"}.pdf`,
-      html2canvas:  { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
-      jsPDF:        { unit: "mm", format: "a4", orientation: "portrait" }
-    };
-
-    html2pdf().set(opt).from(element).save().then(() => {
-      element.style.display = oldDisplay;
-    });
-  }
-
-  function clearRechnung() {
-    currentEditId = null;
-    $("rnr").value   = "";
-    $("kunde").value = "";
-    $("datum").value = todayStr();
-    $("posBody").innerHTML = "";
-    $("summe").value = "";
-  }
-
-  // Initialisierung
-  document.addEventListener("DOMContentLoaded", () => {
-    loadFirmendaten();
-    $("datum").value = todayStr();
-    loadArchiv();
-
-    $("btnFirmendatenSpeichern").addEventListener("click", saveFirmendaten);
-    $("btnAddPos").addEventListener("click", () => addPosition());
-    $("btnSaveRechnung").addEventListener("click", saveRechnung);
-    $("btnClearRechnung").addEventListener("click", clearRechnung);
-  });
-</script>
-
-</body>
-</html>
+// Initial Datum
+$("datum").value = new Date().
