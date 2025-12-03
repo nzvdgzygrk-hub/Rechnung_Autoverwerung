@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Rechnungsprogramm – Kleinunternehmen</title>
+<style>
+    body { font-family: Arial; margin: 0; padding: 0; background: #f2f2f2; }
+    header { background: #333; color: #fff; padding: 20px; text-align: center; }
+    .container { max-width: 900px; margin: auto; padding: 20px; }
+    h2 { border-left: 5px solid #333; padding-left: 10px; }
+    .box { background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 0 5px rgba(0,0,0,0.1); }
+
+    input, textarea {
+        width: 100%; padding: 8px; margin-top: 5px; margin-bottom: 10px;
+        border: 1px solid #ccc; border-radius: 5px;
+    }
+
+    button {
+        padding: 10px 15px; border: none; border-radius: 5px;
+        cursor: pointer; margin-right: 10px; margin-top: 5px;
+    }
+
+    .save { background: #27ae60; color: #fff; }
+    .clear { background: #c0392b; color: #fff; }
+    .pdf { background: #8e44ad; color: #fff; }
+    .print { background: #2980b9; color: #fff; }
+    .edit { background: #d35400; color: #fff; }
+
+    #archivList div {
+        background: #fff; padding: 10px; border-radius: 6px;
+        margin-bottom: 10px; box-shadow: 0 0 4px rgba(0,0,0,0.1);
+    }
+
+    .logo { width: 180px; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+
+<header>
+    <h1>Rechnungsprogramm – Kleinunternehmen</h1>
+</header>
+
+<div class="container">
+
+    <!-- FIRMENDATEN -->
+    <div class="box">
+        <h2>Firmendaten</h2>
+        <img src="Logo.png" class="logo" id="logoPreview">
+
+        <input id="firma" placeholder="Firmenname">
+        <input id="adresse" placeholder="Adresse">
+        <input id="email" placeholder="E-Mail">
+        <input id="telefon" placeholder="Telefon">
+
+        <button class="save" onclick="saveFirmendaten()">Firmendaten speichern</button>
+    </div>
+
+    <!-- RECHNUNG ERSTELLEN -->
+    <div class="box">
+        <h2>Rechnung erstellen</h2>
+
+        <input id="kunde" placeholder="Kunde">
+        <input id="datum" type="date">
+        <textarea id="positionen" placeholder="Positionen / Artikel / Preise (mehrzeilig)"></textarea>
+        <input id="summe" placeholder="Gesamtbetrag (€)">
+        
+        <button class="save" onclick="saveRechnung()">Rechnung speichern</button>
+        <button class="clear" onclick="clearFields()">Felder leeren</button>
+        <button class="pdf" onclick="exportPDF()">PDF speichern</button>
+        <button class="print" onclick="window.print()">Drucken</button>
+    </div>
+
+    <!-- ARCHIV -->
+    <div class="box">
+        <h2>Archiv</h2>
+        <div id="archivList"></div>
+    </div>
+
+</div>
+
+<script>
+// --------------------- Firmendaten laden -------------------------
+function loadFirmendaten() {
+    document.getElementById("firma").value = localStorage.getItem("firma") || "";
+    document.getElementById("adresse").value = localStorage.getItem("adresse") || "";
+    document.getElementById("email").value = localStorage.getItem("email") || "";
+    document.getElementById("telefon").value = localStorage.getItem("telefon") || "";
+}
+loadFirmendaten();
+
+// --------------------- Firmendaten speichern ---------------------
+function saveFirmendaten() {
+    localStorage.setItem("firma", document.getElementById("firma").value);
+    localStorage.setItem("adresse", document.getElementById("adresse").value);
+    localStorage.setItem("email", document.getElementById("email").value);
+    localStorage.setItem("telefon", document.getElementById("telefon").value);
+    alert("Firmendaten gespeichert!");
+}
+
+// --------------------- Felder leeren ------------------------------
+function clearFields() {
+    document.getElementById("kunde").value = "";
+    document.getElementById("datum").value = "";
+    document.getElementById("positionen").value = "";
+    document.getElementById("summe").value = "";
+}
+
+// --------------------- Rechnung speichern -------------------------
+function saveRechnung() {
+    let archiv = JSON.parse(localStorage.getItem("archiv")) || [];
+
+    const rechnung = {
+        id: Date.now(),
+        kunde: kunde.value,
+        datum: datum.value,
+        positionen: positionen.value,
+        summe: summe.value
+    };
+
+    archiv.push(rechnung);
+    localStorage.setItem("archiv", JSON.stringify(archiv));
+
+    loadArchiv();
+    alert("Rechnung gespeichert!");
+}
+
+// --------------------- Archiv anzeigen ----------------------------
+function loadArchiv() {
+    const archiv = JSON.parse(localStorage.getItem("archiv")) || [];
+    const list = document.getElementById("archivList");
+
+    list.innerHTML = "";
+
+    archiv.forEach(r => {
+        const div = document.createElement("div");
+        div.innerHTML = `
+            <b>${r.kunde}</b> – ${r.datum}<br>
+            Summe: ${r.summe} €<br>
+            <button class="edit" onclick='editRechnung(${r.id})'>Bearbeiten</button>
+        `;
+        list.appendChild(div);
+    });
+}
+loadArchiv();
+
+// --------------------- Rechnung bearbeiten ------------------------
+function editRechnung(id) {
+    let archiv = JSON.parse(localStorage.getItem("archiv"));
+    let r = archiv.find(x => x.id === id);
+
+    kunde.value = r.kunde;
+    datum.value = r.datum;
+    positionen.value = r.positionen;
+    summe.value = r.summe;
+
+    // beim Speichern alte löschen und neue speichern
+    archiv = archiv.filter(x => x.id !== id);
+    localStorage.setItem("archiv", JSON.stringify(archiv));
+
+    alert("Rechnung kann jetzt bearbeitet werden!");
+}
+
+// --------------------- PDF EXPORT -------------------------------
+function exportPDF() {
+    const win = window.open("", "_blank");
+    win.document.write(`
+        <html><head><title>PDF</title></head><body>
+        <img src="Logo.png" style="width:150px"><br><br>
+        <h2>Rechnung</h2>
+        <b>Firma:</b> ${firma.value}<br>
+        <b>Adresse:</b> ${adresse.value}<br>
+        <b>Email:</b> ${email.value}<br><br>
+
+        <b>Kunde:</b> ${kunde.value}<br>
+        <b>Datum:</b> ${datum.value}<br><br>
+
+        <pre>${positionen.value}</pre>
+        <h3>Summe: ${summe.value} €</h3>
+        </body></html>
+    `);
+    win.print();
+}
+</script>
+</body>
+</html>
